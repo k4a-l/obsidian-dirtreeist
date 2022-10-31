@@ -13,7 +13,7 @@ interface DirtreeistSettings {
 }
 
 const DEFAULT_SETTINGS: DirtreeistSettings = {
-	treeType: "ascii",
+	treeType: "normal",
 	emptyBeforeUpperHierarche: false,
 	spaceBeforeName: true,
 	spaceSize: 2,
