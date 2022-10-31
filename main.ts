@@ -30,7 +30,6 @@ export default class Dirtreeist extends Plugin {
 			(source, el, ctx) => {
 				const result = dirtreeist(source, this.settings);
 				const div = el.createEl("div");
-				div.style.whiteSpace = "pre";
 
 				div.innerText = result.reduce((prev, dirtree, index) => {
 					return prev + (index !== 0 ? "\n\n" : "") + dirtree;
