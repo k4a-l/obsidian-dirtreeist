@@ -15,19 +15,25 @@ This plugin relies on the functionality of the [dirtreeist](https://github.com/k
 If you write a code block as follows,
 ````
 ```dirtree
-- a
-  - b
-  - c
-- d
+- /components
+	- App.tsx
+	- App.css
+- config.json
+- /utils
+	- converter.ts
+	- parser.ts
 ```
 ````
 
 It is rendered as follows,
 ```
-├─ a
-│　├─ b
-│　└─ c
-└─ d
+├─ /components
+│　├─ App.tsx
+│　└─ App.css
+├─ config.json
+└─ /utils
+　　├─ converter.ts
+　　└─ parser.ts
 ```
 
 ### Other
