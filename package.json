@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-dirtreeist",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"description": "Render a directory Structure Diagram from a markdown lists in codeblock.",
 	"main": "main.js",
 	"scripts": {
