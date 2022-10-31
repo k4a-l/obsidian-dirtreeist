@@ -74,7 +74,7 @@ class DirtreeistSettingTab extends PluginSettingTab {
 				bold: "bold",
 				ascii: "ascii",
 			};
-		new Setting(containerEl).setName("treeType").addDropdown((text) =>
+		new Setting(containerEl).setName("Tree type").addDropdown((text) =>
 			text
 				.addOptions(treeTypeOptions)
 				.setValue(this.plugin.settings.treeType)
@@ -85,7 +85,7 @@ class DirtreeistSettingTab extends PluginSettingTab {
 		);
 
 		new Setting(containerEl)
-			.setName("emptyBeforeUpperHierarche")
+			.setName("Insert empty line before upper hierarche")
 			.addToggle((text) =>
 				text
 					.setValue(this.plugin.settings.emptyBeforeUpperHierarche)
@@ -100,7 +100,7 @@ class DirtreeistSettingTab extends PluginSettingTab {
 					)
 			);
 
-		new Setting(containerEl).setName("spaceBeforeName").addToggle((text) =>
+		new Setting(containerEl).setName("Insert space before Name").addToggle((text) =>
 			text
 				.setValue(this.plugin.settings.spaceBeforeName)
 				.onChange(
@@ -111,7 +111,7 @@ class DirtreeistSettingTab extends PluginSettingTab {
 				)
 		);
 
-		new Setting(containerEl).setName("spaceSize").addDropdown((text) =>
+		new Setting(containerEl).setName("Space size").addDropdown((text) =>
 			text
 				.addOptions({ "1": "1", "2": "2", "3": "3", "4": "4" })
 				.setValue(String(this.plugin.settings.spaceSize))
