@@ -32,13 +32,14 @@ export default class Dirtreeist extends Plugin {
 			"dirtree",
 			(source, el, ctx) => {
 				const result = dirtreeist(source, this.settings);
-				const div = el.createEl("div");
+				const pre = el.createEl("pre");
+				const code = pre.createEl("code");
 
 				const plain = result.reduce((prev, dirtree, index) => {
 					return prev + (index !== 0 ? "\n\n" : "") + dirtree;
 				});
 
-				div.innerHTML = plain
+				code.innerHTML = plain
 					.split("\n")
 					.map((line) => {
 						const match = line.match(
