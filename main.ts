@@ -1,6 +1,9 @@
 import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
 
-import dirtreeist, { Options as DirtreeistOptions } from "@k4a_l/dirtreeist";
+import dirtreeist, { Options as DirtreeistOptions, symbolSets } from "@k4a_l/dirtreeist";
+
+const escapeHtml = (str: string): string =>
+	str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 interface DirtreeistSettings {
 	treeType: Exclude<DirtreeistOptions["treeType"], undefined>;
@@ -29,11 +32,57 @@ export default class Dirtreeist extends Plugin {
 			"dirtree",
 			(source, el, ctx) => {
 				const result = dirtreeist(source, this.settings);
-				const div = el.createEl("div");
+				const pre = el.createEl("pre", { cls: "language-dirtree" });
+				const code = pre.createEl("code", { cls: "language-dirtree is-loaded", attr: { "data-line": "0" } });
 
-				div.innerText = result.reduce((prev, dirtree, index) => {
+				const plain = result.reduce((prev, dirtree, index) => {
 					return prev + (index !== 0 ? "\n\n" : "") + dirtree;
 				});
+
+				const { vertical, horizontal, crossing, end, space } = symbolSets[this.settings.treeType];
+
+				code.innerHTML = plain
+					.split("\n")
+					.map((line) => {
+						const match = line.match(
+							new RegExp(`^([${vertical}${space}]*[${end}${crossing}]*[${horizontal}]*)(.*)$`)
+						);
+						if (!match) return escapeHtml(line);
+
+						const connector = match[1];
+						const rest = match[2];
+
+						const annoIdx = rest.indexOf(" \u2014 ");
+						let name: string;
+						let annotation: string;
+						if (annoIdx !== -1) {
+							name = rest.substring(0, annoIdx);
+							annotation = rest.substring(annoIdx);
+						} else {
+							name = rest;
+							annotation = "";
+						}
+
+						const trimmed = name.replace(/^\s+/, "");
+						const isDir = trimmed.startsWith("/");
+
+						const parts: string[] = [];
+						if (connector)
+							parts.push(
+								`<span class="dirtree-connector">${escapeHtml(connector)}</span>`
+							);
+						if (name)
+							parts.push(
+								`<span class="dirtree-${isDir ? "dir" : "file"}">${escapeHtml(name)}</span>`
+							);
+						if (annotation)
+							parts.push(
+								`<span class="dirtree-annotation">${escapeHtml(annotation)}</span>`
+							);
+
+						return parts.join("");
+					})
+					.join("\n");
 			}
 		);
 

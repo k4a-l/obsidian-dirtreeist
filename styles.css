@@ -1,9 +1,20 @@
-.block-language-dirtree {
-	font-family: "MS ゴシック", Osaka-等幅, monospace;
-    word-spacing: normal;
-	white-space: pre;
-	color: var(--code-normal);
-	background-color: var(--code-background);
-	padding: var(--size-4-4);
-	font-size: var(--code-size);
+.language-dirtree {
+	line-height: 1.3;
+}
+
+.dirtree-connector {
+	color: var(--code-comment);
+}
+
+.dirtree-dir {
+	color: var(--code-keyword);
+	font-weight: var(--font-semibold);
+}
+
+.dirtree-file {
+	color: var(--code-function);
+}
+
+.dirtree-annotation {
+	color: var(--code-comment);
 }
