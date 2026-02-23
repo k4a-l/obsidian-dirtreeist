@@ -1,6 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
 
-import dirtreeist, { Options as DirtreeistOptions } from "@k4a_l/dirtreeist";
+import dirtreeist, { Options as DirtreeistOptions, symbolSets } from "@k4a_l/dirtreeist";
 
 const escapeHtml = (str: string): string =>
 	str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -39,11 +39,13 @@ export default class Dirtreeist extends Plugin {
 					return prev + (index !== 0 ? "\n\n" : "") + dirtree;
 				});
 
+				const { vertical, horizontal, crossing, end, space } = symbolSets[this.settings.treeType];
+
 				code.innerHTML = plain
 					.split("\n")
 					.map((line) => {
 						const match = line.match(
-							/^([\u2502\u2503|\u3000 ]*[\u251C\u2514\u2523\u2517+]*[\u2500\u2501-]*)(.*)$/
+							new RegExp(`^([${vertical}${space}]*[${end}${crossing}]*[${horizontal}]*)(.*)$`)
 						);
 						if (!match) return escapeHtml(line);
 
