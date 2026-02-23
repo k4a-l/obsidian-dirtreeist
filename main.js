@@ -4564,8 +4564,9 @@ var Dirtreeist = class extends import_obsidian.Plugin {
     await this.loadSettings();
     this.registerMarkdownCodeBlockProcessor("dirtree", (source, el, ctx) => {
       const result = dist_default(source, this.settings);
-      const pre = el.createEl("pre");
-      const code = pre.createEl("code");
+      el.addClasses(["el-pre"]);
+      const pre = el.createEl("pre", { cls: "language-dirtree" });
+      const code = pre.createEl("code", { cls: "language-dirtree is-loaded" });
       const plain = result.reduce((prev, dirtree, index2) => {
         return prev + (index2 !== 0 ? "\n\n" : "") + dirtree;
       });
