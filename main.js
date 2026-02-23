@@ -4564,11 +4564,12 @@ var Dirtreeist = class extends import_obsidian.Plugin {
     await this.loadSettings();
     this.registerMarkdownCodeBlockProcessor("dirtree", (source, el, ctx) => {
       const result = dist_default(source, this.settings);
-      const div = el.createEl("div");
+      const pre = el.createEl("pre", { cls: "language-dirtree" });
+      const code = pre.createEl("code", { cls: "language-dirtree is-loaded", attr: { "data-line": "0" } });
       const plain = result.reduce((prev, dirtree, index2) => {
         return prev + (index2 !== 0 ? "\n\n" : "") + dirtree;
       });
-      div.innerHTML = plain.split("\n").map((line) => {
+      code.innerHTML = plain.split("\n").map((line) => {
         const match = line.match(/^([\u2502\u2503|\u3000 ]*[\u251C\u2514\u2523\u2517+]*[\u2500\u2501-]*)(.*)$/);
         if (!match)
           return escapeHtml(line);
