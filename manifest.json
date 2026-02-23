@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-dirtreeist",
 	"name": "Dirtreeist",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"minAppVersion": "1.0.3",
 	"description": "Render a directory Structure Diagram from a markdown lists in codeblock.",
 	"author": "kasahala",
