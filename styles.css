@@ -9,19 +9,18 @@
 }
 
 .dirtree-connector {
-	color: var(--text-faint);
+	color: var(--code-comment);
 }
 
 .dirtree-dir {
-	color: var(--text-accent);
+	color: var(--code-keyword);
 	font-weight: var(--font-semibold);
 }
 
 .dirtree-file {
-	color: var(--code-normal);
+	color: var(--code-function);
 }
 
 .dirtree-annotation {
-	color: var(--text-muted);
-	font-style: italic;
+	color: var(--code-comment);
 }
