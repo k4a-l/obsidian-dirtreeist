@@ -32,9 +32,8 @@ export default class Dirtreeist extends Plugin {
 			"dirtree",
 			(source, el, ctx) => {
 				const result = dirtreeist(source, this.settings);
-				el.addClasses(["el-pre"]);
 				const pre = el.createEl("pre", { cls: "language-dirtree" });
-				const code = pre.createEl("code", { cls: "language-dirtree is-loaded" });
+				const code = pre.createEl("code", { cls: "language-dirtree is-loaded", attr: { "data-line": "0" } });
 
 				const plain = result.reduce((prev, dirtree, index) => {
 					return prev + (index !== 0 ? "\n\n" : "") + dirtree;
