@@ -4552,6 +4552,7 @@ var dirtreeist = (markdown, option) => {
 var dist_default = dirtreeist;
 
 // main.ts
+var escapeHtml = (str) => str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 var DEFAULT_SETTINGS = {
   treeType: "normal",
   emptyBeforeUpperHierarche: false,
@@ -4564,9 +4565,36 @@ var Dirtreeist = class extends import_obsidian.Plugin {
     this.registerMarkdownCodeBlockProcessor("dirtree", (source, el, ctx) => {
       const result = dist_default(source, this.settings);
       const div = el.createEl("div");
-      div.innerText = result.reduce((prev, dirtree, index2) => {
+      const plain = result.reduce((prev, dirtree, index2) => {
         return prev + (index2 !== 0 ? "\n\n" : "") + dirtree;
       });
+      div.innerHTML = plain.split("\n").map((line) => {
+        const match = line.match(/^([\u2502\u2503|\u3000 ]*[\u251C\u2514\u2523\u2517+]*[\u2500\u2501-]*)(.*)$/);
+        if (!match)
+          return escapeHtml(line);
+        const connector = match[1];
+        const rest = match[2];
+        const annoIdx = rest.indexOf(" \u2014 ");
+        let name;
+        let annotation;
+        if (annoIdx !== -1) {
+          name = rest.substring(0, annoIdx);
+          annotation = rest.substring(annoIdx);
+        } else {
+          name = rest;
+          annotation = "";
+        }
+        const trimmed = name.replace(/^\s+/, "");
+        const isDir = trimmed.startsWith("/");
+        const parts = [];
+        if (connector)
+          parts.push(`<span class="dirtree-connector">${escapeHtml(connector)}</span>`);
+        if (name)
+          parts.push(`<span class="dirtree-${isDir ? "dir" : "file"}">${escapeHtml(name)}</span>`);
+        if (annotation)
+          parts.push(`<span class="dirtree-annotation">${escapeHtml(annotation)}</span>`);
+        return parts.join("");
+      }).join("\n");
     });
     this.addSettingTab(new DirtreeistSettingTab(this.app, this));
   }
