@@ -1,3 +1,15 @@
+.block-language-dirtree {
+	font-family: var(--font-monospace);
+	word-spacing: normal;
+	white-space: pre;
+	color: var(--code-normal);
+	background-color: var(--code-background);
+	padding: var(--size-4-4);
+	font-size: var(--code-size);
+	border-radius: var(--radius-s);
+	overflow-x: auto;
+}
+
 .dirtree-connector {
 	color: var(--code-comment);
 }
