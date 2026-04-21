@@ -1,5 +1,6 @@
 .language-dirtree {
 	line-height: 1.3;
+	color: var(--text-normal);
 }
 
 .dirtree-connector {
@@ -12,7 +13,7 @@
 }
 
 .dirtree-file {
-	color: var(--code-function);
+	color: var(--text-normal);
 }
 
 .dirtree-annotation {
