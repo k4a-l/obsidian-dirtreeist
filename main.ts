@@ -1,9 +1,14 @@
-import { App, Plugin, PluginSettingTab, Setting, MarkdownRenderer } from "obsidian";
-
-import dirtreeist, { Options as DirtreeistOptions, symbolSets } from "@k4a_l/dirtreeist";
-
-const escapeHtml = (str: string): string =>
-	str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+import dirtreeist, {
+	type Options as DirtreeistOptions,
+	symbolSets,
+} from "@k4a_l/dirtreeist";
+import {
+	type App,
+	MarkdownRenderer,
+	Plugin,
+	PluginSettingTab,
+	Setting,
+} from "obsidian";
 
 interface DirtreeistSettings {
 	treeType: Exclude<DirtreeistOptions["treeType"], undefined>;
@@ -21,7 +26,7 @@ const DEFAULT_SETTINGS: DirtreeistSettings = {
 	emptyBeforeUpperHierarche: false,
 	spaceBeforeName: true,
 	spaceSize: 2,
-    keepMarkdown: false,
+	keepMarkdown: false,
 };
 
 export default class Dirtreeist extends Plugin {
@@ -35,19 +40,25 @@ export default class Dirtreeist extends Plugin {
 			async (source, el, ctx) => {
 				const result = dirtreeist(source, this.settings);
 				const pre = el.createEl("pre", { cls: "language-dirtree" });
-				const code = pre.createEl("code", { cls: "language-dirtree is-loaded", attr: { "data-line": "0" } });
+				const code = pre.createEl("code", {
+					cls: "language-dirtree is-loaded",
+					attr: { "data-line": "0" },
+				});
 
 				const plain = result.reduce((prev, dirtree, index) => {
 					return prev + (index !== 0 ? "\n\n" : "") + dirtree;
 				});
 
-				const { vertical, horizontal, crossing, end, space } = symbolSets[this.settings.treeType];
+				const { vertical, horizontal, crossing, end, space } =
+					symbolSets[this.settings.treeType];
 
 				const lines = plain.split("\n");
 				for (let i = 0; i < lines.length; i++) {
 					const line = lines[i];
 					const match = line.match(
-						new RegExp(`^([${vertical}${space}]*[${end}${crossing}]*[${horizontal}]*)(.*)$`)
+						new RegExp(
+							`^([${vertical}${space}]*[${end}${crossing}]*[${horizontal}]*)(.*)$`,
+						),
 					);
 
 					if (!match) {
@@ -71,17 +82,32 @@ export default class Dirtreeist extends Plugin {
 						const isDir = trimmed.startsWith("/");
 
 						if (connector) {
-							code.createSpan({ cls: "dirtree-connector", text: connector });
+							code.createSpan({
+								cls: "dirtree-connector",
+								text: connector,
+							});
 						}
 
 						if (name) {
-							const nameSpan = code.createSpan({ cls: `dirtree-${isDir ? "dir" : "file"}` });
-							await this.renderInlineMarkdown(name, nameSpan, ctx.sourcePath);
+							const nameSpan = code.createSpan({
+								cls: `dirtree-${isDir ? "dir" : "file"}`,
+							});
+							await this.renderInlineMarkdown(
+								name,
+								nameSpan,
+								ctx.sourcePath,
+							);
 						}
 
 						if (annotation) {
-							const annotationSpan = code.createSpan({ cls: "dirtree-annotation" });
-							await this.renderInlineMarkdown(annotation, annotationSpan, ctx.sourcePath);
+							const annotationSpan = code.createSpan({
+								cls: "dirtree-annotation",
+							});
+							await this.renderInlineMarkdown(
+								annotation,
+								annotationSpan,
+								ctx.sourcePath,
+							);
 						}
 					}
 
@@ -89,13 +115,17 @@ export default class Dirtreeist extends Plugin {
 						code.appendText("\n");
 					}
 				}
-			}
+			},
 		);
 
 		this.addSettingTab(new DirtreeistSettingTab(this.app, this));
 	}
 
-	async renderInlineMarkdown(markdown: string, el: HTMLElement, sourcePath: string) {
+	async renderInlineMarkdown(
+		markdown: string,
+		el: HTMLElement,
+		sourcePath: string,
+	) {
 		const temp = createSpan();
 		await MarkdownRenderer.renderMarkdown(markdown, temp, sourcePath, this);
 		const p = temp.querySelector("p");
@@ -113,7 +143,7 @@ export default class Dirtreeist extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			await this.loadData()
+			await this.loadData(),
 		);
 	}
 
@@ -148,7 +178,7 @@ class DirtreeistSettingTab extends PluginSettingTab {
 				.onChange(async (value: DirtreeistSettings["treeType"]) => {
 					this.plugin.settings.treeType = value;
 					await this.plugin.saveSettings();
-				})
+				}),
 		);
 
 		new Setting(containerEl)
@@ -158,45 +188,47 @@ class DirtreeistSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.emptyBeforeUpperHierarche)
 					.onChange(
 						async (
-							value: DirtreeistSettings["emptyBeforeUpperHierarche"]
+							value: DirtreeistSettings["emptyBeforeUpperHierarche"],
 						) => {
 							this.plugin.settings.emptyBeforeUpperHierarche =
 								value;
 							await this.plugin.saveSettings();
-						}
-					)
+						},
+					),
 			);
 
-		new Setting(containerEl).setName("Insert space before Name").addToggle((text) =>
-			text
-				.setValue(this.plugin.settings.spaceBeforeName)
-				.onChange(
-					async (value: DirtreeistSettings["spaceBeforeName"]) => {
-						this.plugin.settings.spaceBeforeName = value;
-						await this.plugin.saveSettings();
-					}
-				)
-		);
+		new Setting(containerEl)
+			.setName("Insert space before Name")
+			.addToggle((text) =>
+				text
+					.setValue(this.plugin.settings.spaceBeforeName)
+					.onChange(
+						async (
+							value: DirtreeistSettings["spaceBeforeName"],
+						) => {
+							this.plugin.settings.spaceBeforeName = value;
+							await this.plugin.saveSettings();
+						},
+					),
+			);
 
 		new Setting(containerEl).setName("Space size").addDropdown((text) =>
 			text
 				.addOptions({ "1": "1", "2": "2", "3": "3", "4": "4" })
 				.setValue(String(this.plugin.settings.spaceSize))
-				.onChange(async (value: String) => {
+				.onChange(async (value: string) => {
 					this.plugin.settings.spaceSize = Number(value);
 					await this.plugin.saveSettings();
-				})
+				}),
 		);
 
 		new Setting(containerEl).setName("Keep markdown").addToggle((text) =>
 			text
 				.setValue(this.plugin.settings.keepMarkdown)
-				.onChange(
-					async (value: DirtreeistSettings["keepMarkdown"]) => {
-						this.plugin.settings.keepMarkdown = value;
-						await this.plugin.saveSettings();
-					}
-				)
+				.onChange(async (value: DirtreeistSettings["keepMarkdown"]) => {
+					this.plugin.settings.keepMarkdown = value;
+					await this.plugin.saveSettings();
+				}),
 		);
 	}
 }

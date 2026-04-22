@@ -2,30 +2,30 @@
 
 Render a directory Structure Diagram from a markdown lists in codeblock.
 
-
 ## Caution
+
 This plugin relies on the functionality of the [dirtreeist](https://github.com/k4a-l/dirtreeist) library. Please send feature requests there.
 
-
 ## Features
-
 
 ### Basic
 
 If you write a code block as follows,
+
 ````
 ```dirtree
 - /components
-	- App.tsx
-	- App.css
+ - App.tsx
+ - App.css
 - config.json
 - /utils
-	- converter.ts
-	- parser.ts
+ - converter.ts
+ - parser.ts
 ```
 ````
 
 It is rendered as follows,
+
 ```
 ├─ /components
 │　├─ App.tsx
@@ -37,6 +37,7 @@ It is rendered as follows,
 ```
 
 ### Other
+
 #### Sequential listings
 
 ```
@@ -61,8 +62,6 @@ It is rendered as follows,
 　　　　└─ 3
 　　　　　　└─ 4
 ```
-
-
 
 #### Another element comes in between
 
@@ -91,7 +90,6 @@ sometext
 　　　　└─ 3
 　　　　　　└─ 4
 ```
-
 
 ## Settings
 
