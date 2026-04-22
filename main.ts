@@ -13,6 +13,7 @@ interface DirtreeistSettings {
 	>;
 	spaceBeforeName: Exclude<DirtreeistOptions["spaceBeforeName"], undefined>;
 	spaceSize: Exclude<DirtreeistOptions["spaceSize"], undefined>;
+	keepMarkdown: Exclude<DirtreeistOptions["keepMarkdown"], undefined>;
 }
 
 const DEFAULT_SETTINGS: DirtreeistSettings = {
@@ -20,6 +21,7 @@ const DEFAULT_SETTINGS: DirtreeistSettings = {
 	emptyBeforeUpperHierarche: false,
 	spaceBeforeName: true,
 	spaceSize: 2,
+    keepMarkdown: false,
 };
 
 export default class Dirtreeist extends Plugin {
@@ -184,6 +186,17 @@ class DirtreeistSettingTab extends PluginSettingTab {
 					this.plugin.settings.spaceSize = Number(value);
 					await this.plugin.saveSettings();
 				})
+		);
+
+		new Setting(containerEl).setName("Keep markdown").addToggle((text) =>
+			text
+				.setValue(this.plugin.settings.keepMarkdown)
+				.onChange(
+					async (value: DirtreeistSettings["keepMarkdown"]) => {
+						this.plugin.settings.keepMarkdown = value;
+						await this.plugin.saveSettings();
+					}
+				)
 		);
 	}
 }
