@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, MarkdownRenderer } from "obsidian";
 
 import dirtreeist, { Options as DirtreeistOptions, symbolSets } from "@k4a_l/dirtreeist";
 
@@ -30,7 +30,7 @@ export default class Dirtreeist extends Plugin {
 
 		this.registerMarkdownCodeBlockProcessor(
 			"dirtree",
-			(source, el, ctx) => {
+			async (source, el, ctx) => {
 				const result = dirtreeist(source, this.settings);
 				const pre = el.createEl("pre", { cls: "language-dirtree" });
 				const code = pre.createEl("code", { cls: "language-dirtree is-loaded", attr: { "data-line": "0" } });
@@ -41,14 +41,16 @@ export default class Dirtreeist extends Plugin {
 
 				const { vertical, horizontal, crossing, end, space } = symbolSets[this.settings.treeType];
 
-				code.innerHTML = plain
-					.split("\n")
-					.map((line) => {
-						const match = line.match(
-							new RegExp(`^([${vertical}${space}]*[${end}${crossing}]*[${horizontal}]*)(.*)$`)
-						);
-						if (!match) return escapeHtml(line);
+				const lines = plain.split("\n");
+				for (let i = 0; i < lines.length; i++) {
+					const line = lines[i];
+					const match = line.match(
+						new RegExp(`^([${vertical}${space}]*[${end}${crossing}]*[${horizontal}]*)(.*)$`)
+					);
 
+					if (!match) {
+						code.appendText(line);
+					} else {
 						const connector = match[1];
 						const rest = match[2];
 
@@ -66,27 +68,41 @@ export default class Dirtreeist extends Plugin {
 						const trimmed = name.replace(/^\s+/, "");
 						const isDir = trimmed.startsWith("/");
 
-						const parts: string[] = [];
-						if (connector)
-							parts.push(
-								`<span class="dirtree-connector">${escapeHtml(connector)}</span>`
-							);
-						if (name)
-							parts.push(
-								`<span class="dirtree-${isDir ? "dir" : "file"}">${escapeHtml(name)}</span>`
-							);
-						if (annotation)
-							parts.push(
-								`<span class="dirtree-annotation">${escapeHtml(annotation)}</span>`
-							);
+						if (connector) {
+							code.createSpan({ cls: "dirtree-connector", text: connector });
+						}
 
-						return parts.join("");
-					})
-					.join("\n");
+						if (name) {
+							const nameSpan = code.createSpan({ cls: `dirtree-${isDir ? "dir" : "file"}` });
+							await this.renderInlineMarkdown(name, nameSpan, ctx.sourcePath);
+						}
+
+						if (annotation) {
+							const annotationSpan = code.createSpan({ cls: "dirtree-annotation" });
+							await this.renderInlineMarkdown(annotation, annotationSpan, ctx.sourcePath);
+						}
+					}
+
+					if (i < lines.length - 1) {
+						code.appendText("\n");
+					}
+				}
 			}
 		);
 
 		this.addSettingTab(new DirtreeistSettingTab(this.app, this));
+	}
+
+	async renderInlineMarkdown(markdown: string, el: HTMLElement, sourcePath: string) {
+		const temp = createSpan();
+		await MarkdownRenderer.renderMarkdown(markdown, temp, sourcePath, this);
+		const p = temp.querySelector("p");
+		if (p) {
+			el.append(...Array.from(p.childNodes));
+		} else {
+			el.append(...Array.from(temp.childNodes));
+		}
+		temp.remove();
 	}
 
 	onunload() {}
