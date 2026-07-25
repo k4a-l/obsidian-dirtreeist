@@ -1,6 +1,11 @@
-import dirtreeist, {
+import {
 	type Options as DirtreeistOptions,
-	symbolSets,
+	defaultOptions,
+	type Line,
+	layout,
+	memoAlignValues,
+	parse,
+	treeTypeValues,
 } from "@k4a_l/dirtreeist";
 import {
 	type App,
@@ -10,27 +15,16 @@ import {
 	Setting,
 } from "obsidian";
 
-interface DirtreeistSettings {
-	treeType: Exclude<DirtreeistOptions["treeType"], undefined>;
-	emptyBeforeUpperHierarche: Exclude<
-		DirtreeistOptions["emptyBeforeUpperHierarche"],
-		undefined
-	>;
-	spaceBeforeName: Exclude<DirtreeistOptions["spaceBeforeName"], undefined>;
-	spaceSize: Exclude<DirtreeistOptions["spaceSize"], undefined>;
-	keepMarkdown: Exclude<DirtreeistOptions["keepMarkdown"], undefined>;
-}
+type DirtreeistSettings = Required<DirtreeistOptions>;
 
 const DEFAULT_SETTINGS: DirtreeistSettings = {
-	treeType: "normal",
-	emptyBeforeUpperHierarche: false,
-	spaceBeforeName: true,
-	spaceSize: 2,
-	keepMarkdown: false,
+	...defaultOptions,
+	delimiter: "--",
+	noteIndentSize: 4,
 };
 
 export default class Dirtreeist extends Plugin {
-	settings: DirtreeistSettings;
+	settings!: DirtreeistSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -38,77 +32,27 @@ export default class Dirtreeist extends Plugin {
 		this.registerMarkdownCodeBlockProcessor(
 			"dirtree",
 			async (source, el, ctx) => {
-				const result = dirtreeist(source, this.settings);
 				const pre = el.createEl("pre", { cls: "language-dirtree" });
 				const code = pre.createEl("code", {
 					cls: "language-dirtree is-loaded",
 					attr: { "data-line": "0" },
 				});
 
-				const plain = result.reduce((prev, dirtree, index) => {
-					return prev + (index !== 0 ? "\n\n" : "") + dirtree;
-				});
+				const settings: DirtreeistSettings = {
+					...this.settings,
+				};
+				const lines = parse(source, settings)
+					.map((dirTree) => layout(dirTree, settings))
+					.reduce<(Line | null)[]>((prev, treeLines, index) => {
+						if (index !== 0) prev.push(null);
+						return prev.concat(treeLines);
+					}, []);
 
-				const { vertical, horizontal, crossing, end, space } =
-					symbolSets[this.settings.treeType];
-
-				const lines = plain.split("\n");
 				for (let i = 0; i < lines.length; i++) {
 					const line = lines[i];
-					const match = line.match(
-						new RegExp(
-							`^([${vertical}${space}]*[${end}${crossing}]*[${horizontal}]*)(.*)$`,
-						),
-					);
 
-					if (!match) {
-						code.appendText(line);
-					} else {
-						const connector = match[1];
-						const rest = match[2];
-
-						const annoIdx = rest.indexOf(" \u2014 ");
-						let name: string;
-						let annotation: string;
-						if (annoIdx !== -1) {
-							name = rest.substring(0, annoIdx);
-							annotation = rest.substring(annoIdx);
-						} else {
-							name = rest;
-							annotation = "";
-						}
-
-						const trimmed = name.replace(/^\s+/, "");
-						const isDir = trimmed.startsWith("/");
-
-						if (connector) {
-							code.createSpan({
-								cls: "dirtree-connector",
-								text: connector,
-							});
-						}
-
-						if (name) {
-							const nameSpan = code.createSpan({
-								cls: `dirtree-${isDir ? "dir" : "file"}`,
-							});
-							await this.renderInlineMarkdown(
-								name,
-								nameSpan,
-								ctx.sourcePath,
-							);
-						}
-
-						if (annotation) {
-							const annotationSpan = code.createSpan({
-								cls: "dirtree-annotation",
-							});
-							await this.renderInlineMarkdown(
-								annotation,
-								annotationSpan,
-								ctx.sourcePath,
-							);
-						}
+					if (line !== null) {
+						await this.renderLine(line, code, ctx.sourcePath);
 					}
 
 					if (i < lines.length - 1) {
@@ -121,13 +65,73 @@ export default class Dirtreeist extends Plugin {
 		this.addSettingTab(new DirtreeistSettingTab(this.app, this));
 	}
 
+	/**
+	 * Renders one laid-out line. Whitespace fields are already aligned by
+	 * layout(), so they are emitted verbatim and only the text fields go
+	 * through the Markdown renderer.
+	 */
+	async renderLine(line: Line, code: HTMLElement, sourcePath: string) {
+		if (line.branch) {
+			code.createSpan({ cls: "dirtree-connector", text: line.branch });
+		}
+
+		if (line.type === "empty") {
+			return;
+		}
+
+		if (line.type === "note") {
+			code.appendText(line.gap + line.indent);
+			const memoSpan = code.createSpan({
+				cls: `dirtree-memo dirtree-memo-depth-${line.depth}`,
+			});
+			if (line.bullet) {
+				memoSpan.createSpan({
+					cls: "dirtree-memo-bullet",
+					text: line.bullet,
+				});
+			}
+			await this.renderInlineMarkdown(line.text, memoSpan, sourcePath);
+			return;
+		}
+
+		// A trailing slash marks a directory, matching how names are authored.
+		const isDir = line.name.replace(/^\s+/, "").startsWith("/");
+		const nameSpan = code.createSpan({
+			cls: `dirtree-${isDir ? "dir" : "file"}`,
+		});
+		await this.renderInlineMarkdown(line.name, nameSpan, sourcePath);
+
+		if (line.gap) {
+			code.appendText(line.gap);
+		}
+
+		if (line.memo) {
+			const memoSpan = code.createSpan({ cls: "dirtree-memo" });
+			await this.renderInlineMarkdown(line.memo, memoSpan, sourcePath);
+		}
+	}
+
 	async renderInlineMarkdown(
 		markdown: string,
 		el: HTMLElement,
 		sourcePath: string,
 	) {
+		// Leading whitespace would make Markdown treat the text as an indented
+		// code block, so render it as plain text and keep only the rest as Markdown.
+		const [, indent, rest] = markdown.match(/^(\s*)([\s\S]*)$/) as [
+			string,
+			string,
+			string,
+		];
+		if (indent) {
+			el.appendText(indent);
+		}
+		if (!rest) {
+			return;
+		}
+
 		const temp = createSpan();
-		await MarkdownRenderer.renderMarkdown(markdown, temp, sourcePath, this);
+		await MarkdownRenderer.renderMarkdown(rest, temp, sourcePath, this);
 		const p = temp.querySelector("p");
 		if (p) {
 			el.append(...Array.from(p.childNodes));
@@ -165,52 +169,34 @@ class DirtreeistSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		const treeTypeOptions: Record<string, DirtreeistSettings["treeType"]> =
-			{
-				normal: "normal",
-				bold: "bold",
-				ascii: "ascii",
-			};
-		new Setting(containerEl).setName("Tree type").addDropdown((text) =>
-			text
-				.addOptions(treeTypeOptions)
-				.setValue(this.plugin.settings.treeType)
-				.onChange(async (value: DirtreeistSettings["treeType"]) => {
-					this.plugin.settings.treeType = value;
-					await this.plugin.saveSettings();
-				}),
+		this.createArraySetting(
+			containerEl,
+			{ id: "treeType", displayName: "Tree type" },
+			treeTypeValues,
+			(v) => (this.plugin.settings.treeType = v),
 		);
 
-		new Setting(containerEl)
-			.setName("Insert empty line before upper hierarche")
-			.addToggle((text) =>
-				text
-					.setValue(this.plugin.settings.emptyBeforeUpperHierarche)
-					.onChange(
-						async (
-							value: DirtreeistSettings["emptyBeforeUpperHierarche"],
-						) => {
-							this.plugin.settings.emptyBeforeUpperHierarche =
-								value;
-							await this.plugin.saveSettings();
-						},
-					),
-			);
+		this.createBooleanSetting(containerEl, {
+			id: "cjkFont",
+			displayName: "CJK font",
+		});
 
-		new Setting(containerEl)
-			.setName("Insert space before Name")
-			.addToggle((text) =>
-				text
-					.setValue(this.plugin.settings.spaceBeforeName)
-					.onChange(
-						async (
-							value: DirtreeistSettings["spaceBeforeName"],
-						) => {
-							this.plugin.settings.spaceBeforeName = value;
-							await this.plugin.saveSettings();
-						},
-					),
-			);
+		this.createBooleanSetting(containerEl, {
+			id: "keepMarkdown",
+			displayName: "Keep markdown",
+		});
+
+		new Setting(containerEl).setName("Space").setHeading();
+
+		this.createBooleanSetting(containerEl, {
+			id: "emptyBeforeUpperHierarchy",
+			displayName: "Insert empty line before upper hierarchy",
+		});
+
+		this.createBooleanSetting(containerEl, {
+			id: "spaceBeforeName",
+			displayName: "Insert space before Name",
+		});
 
 		new Setting(containerEl).setName("Space size").addDropdown((text) =>
 			text
@@ -222,13 +208,77 @@ class DirtreeistSettingTab extends PluginSettingTab {
 				}),
 		);
 
-		new Setting(containerEl).setName("Keep markdown").addToggle((text) =>
+		new Setting(containerEl).setName("Memo / Note").setHeading();
+
+		this.createArraySetting(
+			containerEl,
+			{ id: "memoAlign", displayName: "Memo align" },
+			memoAlignValues,
+			(v) => (this.plugin.settings.memoAlign = v),
+		);
+
+		new Setting(containerEl)
+			.setName("Memo max column")
+			.setDesc("0 means no limit")
+			.addSlider((text) =>
+				text
+					.setValue(this.plugin.settings.memoMaxColumn || 0)
+					.setDynamicTooltip()
+					.setLimits(-1, 500, 1)
+					.onChange(async (value: number) => {
+						this.plugin.settings.memoMaxColumn =
+							value <= 0 ? 0 : value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		this.createBooleanSetting(containerEl, {
+			id: "noteAlignToMemo",
+			displayName: "Note align to memo",
+		});
+	}
+
+	private createBooleanSetting = <
+		T extends keyof PickByType<DirtreeistSettings, boolean>,
+	>(
+		containerEl: HTMLElement,
+		config: { id: T; displayName: string },
+	) => {
+		new Setting(containerEl).setName(config.displayName).addToggle((text) =>
 			text
-				.setValue(this.plugin.settings.keepMarkdown)
-				.onChange(async (value: DirtreeistSettings["keepMarkdown"]) => {
-					this.plugin.settings.keepMarkdown = value;
+				.setValue(this.plugin.settings[config.id])
+				.onChange(async (value: DirtreeistSettings[T]) => {
+					this.plugin.settings[config.id] = value;
 					await this.plugin.saveSettings();
 				}),
 		);
-	}
+	};
+
+	private createArraySetting = <T>(
+		containerEl: HTMLElement,
+		config: { id: keyof DirtreeistSettings; displayName: string },
+		arr: readonly T[],
+		setter: (v: T) => void,
+	) => {
+		new Setting(containerEl)
+			.setName(config.displayName)
+			.addDropdown((text) => {
+				arr.forEach((value) => {
+					text.addOption(String(value), String(value));
+				});
+				return text
+					.setValue(String(this.plugin.settings[config.id]))
+					.onChange(async (value) => {
+						const v = arr.find((v) => String(v) === value);
+						if (v) {
+							setter(v);
+							await this.plugin.saveSettings();
+						}
+					});
+			});
+	};
 }
+
+type PickByType<T, ValueType> = {
+	[K in keyof T as T[K] extends ValueType ? K : never]: T[K];
+};
