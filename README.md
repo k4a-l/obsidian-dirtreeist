@@ -14,26 +14,28 @@ If you write a code block as follows,
 
 ````
 ```dirtree
-- /components
- - App.tsx
- - App.css
-- config.json
+- /components -- UI
+  - -- has buttons and modals
+    - -- Storybook ready
+  - App.tsx -- entry point
+  - App.css -- style
+- tsconfig.json -- settings
+- README.md -- docs
 - /utils
- - converter.ts
- - parser.ts
 ```
 ````
 
 It is rendered as follows,
 
 ```
-├─ /components
-│　├─ App.tsx
-│　└─ App.css
-├─ config.json
-└─ /utils
-　　├─ converter.ts
-　　└─ parser.ts
+├─/components    UI
+│　│             ・has buttons and modals
+│　│             　・Storybook ready
+│　├─App.tsx    entry point
+│　└─App.css    style
+├─tsconfig.json  settings
+├─README.md      docs
+└─/utils
 ```
 
 ### Other
@@ -43,24 +45,18 @@ It is rendered as follows,
 ```
 - a
   - b
-  - c
-- d
+- c
 
 - 1
   - 2
-    - 3
-      - 4
 ```
 
 ```
 ├─ a
 │　├─ b
-│　└─ c
-├─ d
+├─ c
 └─ 1
 　　└─ 2
-　　　　└─ 3
-　　　　　　└─ 4
 ```
 
 #### Another element comes in between
@@ -68,29 +64,23 @@ It is rendered as follows,
 ```
 - a
   - b
-  - c
-- d
+- c
 
 sometext
 
 - 1
   - 2
-    - 3
-      - 4
 ```
 
 ```
 ├─ a
 │　├─ b
-│　└─ c
-└─ d
+└─ c
 
 └─ 1
 　　└─ 2
-　　　　└─ 3
-　　　　　　└─ 4
 ```
 
-## Settings
+## Others
 
-See [Description of options](https://github.com/k4a-l/dirtreeist#description-of-options).
+See [dirtreeist](https://github.com/k4a-l/dirtreeist) library.

@@ -3,6 +3,12 @@
 	color: var(--text-normal);
 }
 
+code.language-dirtree {
+	white-space: pre;
+	overflow-x: auto;
+	font-family: monospace;
+}
+
 .dirtree-connector {
 	color: var(--code-comment);
 }
@@ -16,6 +22,11 @@
 	color: var(--text-normal);
 }
 
-.dirtree-annotation {
-	color: var(--code-comment);
+.dirtree-memo {
+	color: var(--text-muted);
+	font-size: small;
+}
+
+.dirtree-memo-bullet {
+	color: var(--text-faint);
 }
